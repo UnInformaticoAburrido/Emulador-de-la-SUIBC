@@ -29,8 +29,7 @@ FETCH:
 BUCLEFETCH:
     ADDQ #1,D6;añadimos 1 a la posicion de memoria de d6
     MOVE.W EPC,D1
-    MOVE.W D1,A1
-    MOVE.L EMEM(A1),DECODE;movemos la posicion a1 de EMEM a DECODE
+    MOVE.L EMEM(D1),A1;movemos la posicion a1 de EMEM a A1
     BRA DECOD
     *Final fetch
     ;--- FFETCH: FIN FETCH
@@ -113,7 +112,7 @@ DECOD:
 	        ; ESCRIBID VUESTRO CODIGO AQUI
     MOVE.W #15,D7 *Uso D7 como contador
 DECODLOOP:
-    BTST D7,DECODE
+    BTST D7,A1
     BNE SWITCH;salta si el bit 15 es 1
     DBRA D7,DECODLOOP
 SWITCH:
@@ -125,10 +124,10 @@ SWITCH:
     BNE JUMP
 GM:
     SUBQ #1,D7
-    BTST D7,DECODE
+    BTST D7,A1
     BNE HLT
     SUBQ #1,D7
-    BTST D7,DECODE
+    BTST D7,A1
     BNE LOA
     BRA STO
 
@@ -142,7 +141,7 @@ HTL:
 ALU:
     *cOMPROVAMOS LAS INSTRUCCIONES DE ALU
     SUBQ #1,D7
-    BTST D7,DECODE
+    BTST D7,A1
     BNE HLT
 JUMP:
     ;--- FDECOD: FIN DECOD
