@@ -27,13 +27,12 @@ FETCH:
 	        ; ESCRIBID VUESTRO CODIGO AQUI
     LEA EIR,D6
 BUCLEFETCH:
-    ADDQ #1,D6
+    ADDQ #1,D6;añadimos 1 a la posicion de memoria de d6
     MOVE.W EPC,D1
     MOVE.W D1,A1
-    MOVE.L EMEM(A1),DECODE
+    MOVE.L EMEM(A1),DECODE;movemos la posicion a1 de EMEM a DECODE
     BRA DECOD
     *Final fetch
-    ADDQ #1,EPC
     ;--- FFETCH: FIN FETCH
     
     
@@ -115,7 +114,7 @@ DECOD:
     MOVE.W #15,D7 *Uso D7 como contador
 DECODLOOP:
     BTST D7,DECODE
-    BNE SWITCH
+    BNE SWITCH;salta si el bit 15 es 1
     DBRA D7,DECODLOOP
 SWITCH:
     CMP #15,D7
