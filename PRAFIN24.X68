@@ -119,7 +119,7 @@ DECODLOOP:
     DBRA D7,DECODLOOP
 SWITCH:
     CMP #15,D7
-    BNE GM
+    BNE GM;salta si z=0
     CMP #14,D7
     BNE ALU
     CMP #13,D7
