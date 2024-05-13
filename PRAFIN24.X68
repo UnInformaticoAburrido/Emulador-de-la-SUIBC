@@ -25,10 +25,6 @@ FETCH:
 	    ;*** y dejar listo el EPC para que apunte a la siguiente instruccion
 	
 	        ; ESCRIBID VUESTRO CODIGO AQUI
-    *Eliminar
-CODE DC.W 12
-DECODE DC.W 1
-    *Eliminar
     LEA EIR,D6
 BUCLEFETCH:
     ADDQ #1,D6
