@@ -88,10 +88,6 @@ ELOA:
     MOVE.W #2,A6
     BRA FETCH
 ECMP:
-<<<<<<< HEAD
-    MOVE.W #3,A6
-    BRA FETCH
-=======
 
     BTST #6,A1
     BNE CMPj1
@@ -139,7 +135,6 @@ CMP11:
     BRA HLT
     
 
->>>>>>> e9fe756 (funcion base de cmp)
 EADD:
     MOVE.W #4,A6
     BRA FETCH
