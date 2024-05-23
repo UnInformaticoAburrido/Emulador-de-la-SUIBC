@@ -95,7 +95,6 @@ CMP0:
     MOVE.B A1,A4
     CMP R0,A4
     BRA HLT
-
 CMP1:
     LSR #4,A1
     MOVE.B A1,A4
@@ -116,10 +115,7 @@ ADD1:
     ADD R1,A4
     BRA HLT
 
-
-EADD:
-    MOVE.W #4,A6
-    BRA FETCH
+    
 ESUB:
     MOVE.W #5,A6
     BRA FETCH
