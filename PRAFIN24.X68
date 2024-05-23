@@ -1,6 +1,6 @@
 *-----------------------------------------------------------
 * Title      : PRAFIN24
-* Written by : Dimitry Comapny Cifre
+* Written by : Dimitry Comapny Cifre,Asier Zubillaga Llabres
 * Date       : 26/05/2024
 * Description: Emulador de la SUIBC
 *-----------------------------------------------------------
@@ -88,52 +88,34 @@ ELOA:
     MOVE.W #2,A6
     BRA FETCH
 ECMP:
+    BTST #7,A1
+    BNE CMP1
+CMP0:
+    LSR #4,A1
+    MOVE.B A1,A4
+    CMP R0,A4
+    BRA HLT
 
-    BTST #6,A1
-    BNE CMPj1
-CMPj0:
-    BTST #5,A1
-    BNE CMP1x
-CMP00x:
-    BTST #4,A1
-    BNE CMP01
-CMP000:
-    CMP R0,R0
+CMP1:
+    LSR #4,A1
+    MOVE.B A1,A4
+    CMP R1,A4
+
+
+EADD:
+    BTST #7,A1
+    BNE ADD1
+ADD0:
+    LSR #4,A1
+    MOVE.B A1,A4
+    ADD R0,A4
     BRA HLT
-CMP001:
-    CMP R0,R1
+ADD1:
+    LSR #4,A1
+    MOVE.B A1,A4
+    ADD R1,A4
     BRA HLT
-CMP01x:
-    BTST #4,A1
-    BNE CMP011
-CMP010:
-    CMP R0,R2
-    BRA HLT
-CMP011:
-    CMP R0,R3
-    BRA HLT
-CMPj1:
-    BTST #5,A1
-    BNE CMP1x
-CMP0x:
-    BTST #4,A1
-    BNE CMP01
-CMP00:
-    CMP R1,R0
-    BRA HLT
-CMP01:
-    CMP R1,R1
-    BRA HLT
-CMP1x:
-    BTST #4,A1
-    BNE CMP11
-CMP10:
-    CMP R1,R2
-    BRA HLT
-CMP11:
-    CMP R1,R3
-    BRA HLT
-    
+
 
 EADD:
     MOVE.W #4,A6
