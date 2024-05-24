@@ -91,10 +91,10 @@ ESTO:
     BNE STO1
 
     MOVE [ER0],A2
-    BRA HLT
+    BRA DECODLOOP
 STO1:
     MOVE [ER1],A2
-    BRA HLT
+    BRA DECODLOOP
 
 
 ELOA:
@@ -103,13 +103,13 @@ ELOA:
     ADD A2,A3
 
     BTST #11,D1
-    BNE LOA1
+    BNE DECODLOOP
 
     MOVE [M],ER0
     BRA HLT
 LOA1:
     MOVE [M],ER1
-    BRA HLT
+    BRA DECODLOOP
 
 
 ECMP:
@@ -126,10 +126,10 @@ ECMP:
     BTST #6,D1
     BNE CMP1
     CMP.W ER0,(A2)
-    BRA HLT
+    BRA DECODLOOP
 CMP1:
     CMP.W ER1,(A2)
-    BRA HLT
+    BRA DECODLOOP
 
 
 EADD:
@@ -145,10 +145,10 @@ EADD:
     BTST #6,D1
     BNE ADD1
     ADD.W ER0,(A2)
-    BRA HLT
+    BRA DECODLOOP
 ADD1:
     ADD.W ER1,(A2)
-    BRA HLT
+    BRA DECODLOOP
 
 
 ESUB:
@@ -164,10 +164,10 @@ ESUB:
     BTST #6,D1
     BNE SUB1
     SUB.W ER0,(A2)
-    BRA HLT
+    BRA DECODLOOP
 SUB1:
     SUB.W ER1,(A2)
-    BRA HLT
+    BRA DECODLOOP
 
 
 ENOR:
@@ -184,11 +184,11 @@ ENOR:
     BNE NOR1
     OR.W ER0,(A2)
     NOT ER0
-    BRA HLT
+    BRA DECODLOOP
 NOR1:
     OR.W ER0,(A2)
     NOT ER0
-    BRA HLT
+    BRA DECODLOOP
 
 
 ESET:
