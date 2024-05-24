@@ -5,7 +5,8 @@
 * Description: Emulador de la SUIBC
 *-----------------------------------------------------------
     ORG $1000
-EMEM:   DC.W $A807,$7012,$2050,$4860,$C000,$4460,$C000,$0001
+EMEM:   DC.W $A00C,$00A0,$7002,$5000,$A80D,$00A0,$4420,$63FD
+        DC.W $00A0,$2060,$800E,$C000,$0003,$0004,$0000
 EIR:    DC.W 0 ;eregistro de instruccion
 EPC:    DC.W 0 ;econtador de programa
 ER0:    DC.W 0 ;eregistro R0
@@ -22,11 +23,10 @@ FETCH:
         ;*** En esta seccion debeis introducir el codigo necesario para cargar
         ;*** en el EIR la siguiente instruccion a ejecutar, indicada por el EPC,
 	    ;*** y dejar listo el EPC para que apunte a la siguiente instruccion
-	    ADDQ.W #1, A4
     MOVE.W EPC,A0
     MOVE.W EMEM(A0), D0
     MOVE.W D0, EIR
-    ADDQ.W #2,EPC
+    ADDQ.W #1,EPC
 
 
     ;--- FFETCH: FIN FETCH
@@ -172,9 +172,9 @@ ALU:
     BRA FINDEC
 
 JUMP:
-    BTST #13,D0            ; Comprobar si el bit 7 de D0 es 1
+    BTST #12,D0            ; Comprobar si el bit 7 de D0 es 1
     BNE JMI
-    BTST #12,D0            ; Comprobar si el bit 6 de D0 es 1
+    BTST #11,D0            ; Comprobar si el bit 6 de D0 es 1
     BNE JMN
     *Devolver el JMZ
     MOVE.W #9,10(SP)
@@ -200,7 +200,7 @@ SET:
     BRA FINDEC
 
 ADQTRA:
-    BTST #12,D0            ; Comprobar si el bit 8 de D0 es 1
+    BTST #8,D0            ; Comprobar si el bit 8 de D0 es 1
     BNE TRA
     ; Devolver ADQ
     MOVE.W #7,10(SP)
@@ -233,3 +233,7 @@ FINDEC:
 
     ;--- FDECOD: FIN DECOD
     END    START
+*~Font name~Courier New~
+*~Font size~10~
+*~Tab type~1~
+*~Tab size~4~
