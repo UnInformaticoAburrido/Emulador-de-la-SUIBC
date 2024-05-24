@@ -114,7 +114,7 @@ LOA1:
 
 ECMP:
    
-   MOVE D1,D2
+   MOVE D1,D3
 
    LEA ER0,A2
    **110000
@@ -133,7 +133,7 @@ CMP1:
 
 
 EADD:
-    MOVE D1,D2
+    MOVE D1,D3
 
    LEA ER0,A2
    **110000
@@ -152,7 +152,7 @@ ADD1:
 
 
 ESUB:
-    MOVE D1,D2
+    MOVE D1,D3
 
    LEA ER0,A2
    **110000
@@ -171,7 +171,7 @@ SUB1:
 
 
 ENOR:
-    MOVE D1,D2
+    MOVE D1,D3
 
    LEA ER0,A2
    **110000
@@ -192,45 +192,73 @@ NOR1:
 
 
 ESET:
-    MOVE D1,D2
+    MOVE D1,D3
 
     LEA ER0,A2
     AND #%11,D3
     MOVE D3,A3
-    ADD.W A3,A2
+    ADD A3,A2
+
+    LSR #2,D3
+    MOVE.B D3,D4
+
+    MOVE D4,(A2)
+    EXT (A2)
+
+    BRA DECODLOOP
 
 
 EADQ:
 
-ETRA:
+    MOVE D1,D3
+
     LEA ER0,A2
-    LEA ER0,A4
-
-    MOVE D1,D2
-
-    AND #%110000,D3
-    LSR.W #3,D3
+    AND #%11,D3
     MOVE D3,A3
     ADD A3,A2
+
+    LSR #2,D3
+    MOVE.B D3,D4
+
+    ADD D4,(A2)
+    EXT (A2)
+
+    BRA DECODLOOP
+
+ETRA:
+    MOVE D1,D3
+
+    LEA ER0,A2
+    AND #%11,D3
+    MOVE D3,A3
+
+    LEA ER0,A4
+    LSR #4,D3
+    AND #%11,D3
+    MOVE D3,A4
+
+    MOVE ((A4)),A3
+
+    BRA DECODLOOP
 
 EJMZ:
     LSR #4,D1
     BTST #2,ESR
     BNE JMZ1
-    BRA HLT
+    BRA DECODLOOP
 JMZ1:
     MOVE.B  D1,EPC
-    BRA HLT
+    BRA DECODLOOP
 
 
 EJMN:
     LSR #4,D1
     BTST #1,ESR
     BNE JMN1
-    BRA HLT
+    BRA DECODLOOP
 JMN1:
     MOVE.B  D1,EPC
-    BRA HLT
+    BRA DECODLOOP
 
 
 EJMI:
