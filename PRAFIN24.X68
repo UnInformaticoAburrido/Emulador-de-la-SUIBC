@@ -77,44 +77,165 @@ JMPLIST:
 	
 	; ESCRIBID EN CADA ETIQUETA LA FASE DE EJECUCION DE CADA INSTRUCCION
 ESTO:
+    
+    MOVE.B D1,A2
+    LEA EMEM,A3
+    ADD A2,A3
+    
+    BTST #11,D1
+    BNE STO1
+
+    MOVE [ER0],A2
+    BRA HLT
+STO1:
+    MOVE [ER1],A2
+    BRA HLT
+
+
 ELOA:
+    MOVE.B D1,A2
+    LEA EMEM,A3
+    ADD A2,A3
+
+    BTST #11,D1
+    BNE LOA1
+
+    MOVE [M],ER0
+    BRA HLT
+LOA1:
+    MOVE [M],ER1
+    BRA HLT
+
+
 ECMP:
-    BTST #7,A1
+   
+   MOVE D1,D2
+
+   LEA ER0,A2
+   **110000
+    AND #%110000,D3
+    LSR.W #3,D3
+    MOVE D3,A3
+    ADD A3,A2
+
+    BTST #6,D1
     BNE CMP1
-CMP0:
-    LSR #4,A1
-    MOVE.B A1,A4
-    CMP R0,A4
+    CMP.W ER0,(A2)
     BRA HLT
 CMP1:
-    LSR #4,A1
-    MOVE.B A1,A4
-    CMP R1,A4
+    CMP.W ER1,(A2)
+    BRA HLT
 
 
 EADD:
-    BTST #7,A1
+    MOVE D1,D2
+
+   LEA ER0,A2
+   **110000
+    AND #%110000,D3
+    LSR.W #3,D3
+    MOVE D3,A3
+    ADD A3,A2
+
+    BTST #6,D1
     BNE ADD1
-ADD0:
-    LSR #4,A1
-    MOVE.B A1,A4
-    ADD R0,A4
+    ADD.W ER0,(A2)
     BRA HLT
 ADD1:
-    LSR #4,A1
-    MOVE.B A1,A4
-    ADD R1,A4
+    ADD.W ER1,(A2)
     BRA HLT
 
-    
+
 ESUB:
+    MOVE D1,D2
+
+   LEA ER0,A2
+   **110000
+    AND #%110000,D3
+    LSR.W #3,D3
+    MOVE D3,A3
+    ADD A3,A2
+
+    BTST #6,D1
+    BNE SUB1
+    SUB.W ER0,(A2)
+    BRA HLT
+SUB1:
+    SUB.W ER1,(A2)
+    BRA HLT
+
+
 ENOR:
+    MOVE D1,D2
+
+   LEA ER0,A2
+   **110000
+    AND #%110000,D3
+    LSR.W #3,D3
+    MOVE D3,A3
+    ADD A3,A2
+
+    BTST #6,D1
+    BNE NOR1
+    OR.W ER0,(A2)
+    NOT ER0
+    BRA HLT
+NOR1:
+    OR.W ER0,(A2)
+    NOT ER0
+    BRA HLT
+
+
 ESET:
+    MOVE D1,D2
+
+    LEA ER0,A2
+    AND #%11,D3
+    MOVE D3,A3
+    ADD.W A3,A2
+
+
 EADQ:
+
 ETRA:
+    LEA ER0,A2
+    LEA ER0,A4
+
+    MOVE D1,D2
+
+    AND #%110000,D3
+    LSR.W #3,D3
+    MOVE D3,A3
+    ADD A3,A2
+
 EJMZ:
+    LSR #4,D1
+    BTST #2,ESR
+    BNE JMZ1
+    BRA HLT
+JMZ1:
+    MOVE.B  D1,EPC
+    BRA HLT
+
+
 EJMN:
+    LSR #4,D1
+    BTST #1,ESR
+    BNE JMN1
+    BRA HLT
+JMN1:
+    MOVE.B  D1,EPC
+    BRA HLT
+
+
 EJMI:
+    LSR #4,D1
+    BTST #0,ESR
+    BNE JMI1
+    BRA HLT
+JMI1:
+    MOVE.B  D1,EPC
+
 EHLT:
     SIMHALT
     ;--- FEXEC: FIN EJECUCION
