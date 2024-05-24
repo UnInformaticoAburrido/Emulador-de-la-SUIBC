@@ -5,8 +5,7 @@
 * Description: Emulador de la SUIBC
 *-----------------------------------------------------------
     ORG $1000
-EMEM:   DC.W $A00C,$00A0,$7002,$5000,$A80D,$00A0,$4420,$63FD
-        DC.W $00A0,$2060,$800E,$C000,$0003,$0004,$0000
+EMEM:   DC.W $A807,$7012,$2050,$4860,$C000,$4460,$C000,$0001
 EIR:    DC.W 0 ;eregistro de instruccion
 EPC:    DC.W 0 ;econtador de programa
 ER0:    DC.W 0 ;eregistro R0
@@ -174,9 +173,9 @@ ALU:
     BRA FINDEC
 
 JUMP:
-    BTST #12,D0            ; Comprobar si el bit 7 de D0 es 1
+    BTST #13,D0            ; Comprobar si el bit 7 de D0 es 1
     BNE JMI
-    BTST #11,D0            ; Comprobar si el bit 6 de D0 es 1
+    BTST #12,D0            ; Comprobar si el bit 6 de D0 es 1
     BNE JMN
     *Devolver el JMZ
     MOVE.W #9,14(SP)
@@ -202,7 +201,7 @@ SET:
     BRA FINDEC
 
 ADQTRA:
-    BTST #8,D0            ; Comprobar si el bit 8 de D0 es 1
+    BTST #12,D0            ; Comprobar si el bit 8 de D0 es 1
     BNE TRA
     ; Devolver ADQ
     MOVE.W #7,14(SP)
