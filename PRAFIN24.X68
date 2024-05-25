@@ -37,7 +37,7 @@ FETCH:
     ;--- IBRDECOD: INICIO SALTO A DECOD
         ;*** En esta seccion debeis preparar la pila para llamar a la subrutina
         ;*** DECOD, llamar a la subrutina, y vaciar la pila correctamente,
-        ;*** almacenando el resultado de la decodificacion en D1al grupo corespondiente
+        ;*** almacenando el resultado de la decodificacion en D1
 
             ;Preparamos stack
             SUBQ.W #2, SP
@@ -82,195 +82,181 @@ JMPLIST:
 	
 	; ESCRIBID EN CADA ETIQUETA LA FASE DE EJECUCION DE CADA INSTRUCCION
 ESTO:
+    MOVE.B D1,A2 ;movemos el Byte menos significativo a un registro auxiliar
+    LEA EMEM,A3 ;guardamos la direccion de EMEM en un registro auxiliar
+    ADD A2,A3 ;sumamos las direcciones para ver donde guardamos
     
-    MOVE.B D1,A2;movemos el Byte menos significativo (m) a un registro auxiliar
-    LEA EMEM,A3;guardamos la direccion de EMEM en un registro auxiliar
-    ADD A2,A3;sumamos las direcciones para ver donde guardamos
-    
-    BTST #11,D1;comprobamos la j
-    BNE STO1;si j es 1 saltamos a la etiqueta STO1
+    BTST #11,D1 ;comprobamos la j
+    BNE STO1 ;si j es 1 saltamos a la etiqueta STO1
 
-    MOVE [ER0],A2 ;movemos el contenido de ER0 a la direccion de memoria asignada
-    BRA DECODLOOP ;volvemos al decode
+    MOVE [ER0],A2 ;movemos el contenido ER0 a la direccion de memoria asignada
+    BRA FETCH ;volvemos al decode
 STO1:
-    MOVE [ER1],A2;movemos el contenido de ER0 a la direccion de memoria asignada
-    BRA DECODLOOP;volvemos al decode
+    MOVE [ER1],A2 ;movemos el contenido ER0 a la direccion de memoria asignada
+    BRA FETCH ;volvemos al decode
 
 
 ELOA:
-    MOVE.B D1,A2;movemos el Byte menos significativo (m) a un registro auxiliar
-    LEA EMEM,A3;guardamos la direccion de EMEM en un registro auxiliar
-    ADD A2,A3;sumamos las direcciones para ver donde guardamos
+    MOVE.B D1,A2 ;movemos el Byte menos significativo a un registro auxiliar
+    LEA EMEM,A3 ;guardamos la direccion de EMEM en un registro auxiliar
+    ADD A2,A3 ;sumamos las direcciones para ver donde guardamos
 
-    BTST #11,D1;comprobamos la j
-    BNE LOA1;si j=1 saltamos a la etiqueta LOA1
+    BTST #11,D1 ;comprobamos la j
+    BNE LOA1 ;si j=1 saltamos a la etiqueta LOA1
 
-    MOVE [M],ER0; movemos el contenido de m a ER0
-    BRA DECODLOOP;volvemos a decode
+    MOVE [M],ER0 ;movemos el contenido de m a ER0
+    BRA FETCH ;volvemos a decode
 LOA1:
-    MOVE [M],ER1; movemos el contenido de m a ER1
-    BRA DECODLOOP;volvemos a decode
+    MOVE [M],ER1 ;movemos el contenido de m a ER1
+    BRA FETCH ;volvemos a decode
 
 
 ECMP:
-   MOVE D1,D3;movemos la instruccion a un registro auxiliar para operar
-
-   LEA ER0,A2;movemos la direccion de ER0 a un registro ya que las direcciones de los ER estan contiguas
+   MOVE D1,D3 ;movemos la instruccion a un registro auxiliar para operar
+*movemos de ER0 a memoria aprovechando que las direcciones de ER son contiguas
+   LEA ER0,A2
    **110000
     AND #%110000,D3  ;mascara de bits para comprobar aa
     LSR.W #3,D3
-    MOVE D3,A3;movemos la direccion resultante a otro registro
-    ADD A3,A2;las sumamos para apuntar al ER pertinente
-
-    BTST #6,D1;comprobamos la j
-    BNE CMP1;si j=1 saltamos a la etiqueta CMP1
-    CMP.W ER0,(A2);hacemos un cmp entre Er0 y el registro al que apunta la direccion
-    BRA DECOD;volvemos a decod
+    MOVE D3,A3 ;movemos la direccion resultante a otro registro
+    ADD A3,A2 ;las sumamos para apuntar al ER pertinente
+    BTST #6,D1 ;comprobamos la j
+    BNE CMP1 ;si j=1 saltamos a la etiqueta CMP1
+    CMP.W ER0,(A2) ;hacemos un cmp entre Er0 y el registro A2
+    BRA FETCH ;volvemos a decod
 CMP1:
-    CMP.W ER1,(A2);hacemos cmp entre ER1 y el registro al que apunta la direccion
-    BRA DECOD;volvemos a decod
-
+    CMP.W ER1,(A2) ;hacemos cmp entre ER1 y el registro A2
+    BRA FETCH ;volvemos a decod
 
 EADD:
-    MOVE D1,D3;movemos la instruccion a un registro auxiliar para operar
+    MOVE D1,D3 ;movemos la instruccion a un registro auxiliar para operar
 
-   LEA ER0,A2;movemos la direccion de ER0 a un registro ya que las direcciones de los ER estan contiguas
+   LEA ER0,A2 ;movemos la direccion de ER0
    **110000
-    AND #%110000,D3;obtenemos aa
+    AND #%110000,D3 ;obtenemos aa
     LSR.W #3,D3
-    MOVE D3,A3;movemos la direccion resultante a un registro auxiliar
-    ADD A3,A2;sumamos la direcciones para saber a donde apuntar
+    MOVE D3,A3 ;movemos la direccion resultante a un registro auxiliar
+    ADD A3,A2 ;sumamos la direcciones para saber a donde apuntar
 
-    BTST #6,D1;comprobamos j
-    BNE ADD1;j=1 saltamos a la etiqueta
-    ADD.W ER0,(A2);sumamos el registro con el contenido de la direccion
-    BRA DECOD;volvemos a decod
+    BTST #6,D1 ;comprobamos j
+    BNE ADD1 ;j=1 saltamos a la etiqueta
+    ADD.W ER0,(A2) ;sumamos el registro con el contenido de la direccion
+    BRA FETCH ;volvemos a decod
 ADD1:
-    ADD.W ER1,(A2);sumamos el registro con el contenido de la direccion
-    BRA DECOD;volvemos a decod
-
+    ADD.W ER1,(A2) ;sumamos el registro con el contenido de la direccion
+    BRA FETCH ;volvemos a decod
 
 ESUB:
-    MOVE D1,D3;movemos la instruccion a un registro auxiliar para operar
+    MOVE D1,D3 ;movemos la instruccion a un registro auxiliar para operar
 
-   LEA ER0,A2;movemos la direccion de ER0 a un registro ya que las direcciones de los ER estan contiguas
+   LEA ER0,A2 ;movemos la direccion de ER0 a un registro
    **110000
-    AND #%110000,D3;obtenemos aa
+    AND #%110000,D3 ;obtenemos aa
     LSR.W #3,D3
-    MOVE D3,A3;movemos la direccion resultante a un registro auxiliar
-    ADD A3,A2;sumamos la direcciones para saber a donde apuntar
+    MOVE D3,A3 ;movemos la direccion resultante a un registro auxiliar
+    ADD A3,A2 ;sumamos la direcciones para saber a donde apuntar
 
-    BTST #6,D1;comprobamos j
-    BNE SUB1;j=1 saltamos a la etiqueta
-    SUB.W ER0,(A2);sumamos el registro con el contenido de la direccion
-    BRA DECOD;volvemos a decod
+    BTST #6,D1 ;comprobamos j
+    BNE SUB1 ;j=1 saltamos a la etiqueta
+    SUB.W ER0,(A2) ;sumamos el registro con el contenido de la direccion
+    BRA FETCH ;volvemos a decod
 SUB1:
-    SUB.W ER1,(A2);sumamos el registro con el contenido de la direccion
-    BRA DECOD;volvemos a decod
+    SUB.W ER1,(A2) ;sumamos el registro con el contenido de la direccion
+    BRA FETCH ;volvemos a decod
 
 
 ENOR:
-    MOVE D1,D3;movemos la instruccion a un registro auxiliar para operar
-
-   LEA ER0,A2;movemos la direccion de ER0 a un registro ya que las direcciones de los ER estan contiguas
+    MOVE D1,D3 ;movemos la instruccion a un registro auxiliar para operar
+    LEA ER0,A2 ;movemos la direccion de ER0 a un registro
    **110000
-    AND #%110000,D3;obtenemos aa
+    AND #%110000,D3 ;obtenemos aa
     LSR.W #3,D3
-    MOVE D3,A3;movemos la direccion resultante a un registro auxiliar
-    ADD A3,A2;sumamos la direcciones para saber a donde apuntar
+    MOVE D3,A3 ;movemos la direccion resultante a un registro auxiliar
+    ADD A3,A2 ;sumamos la direcciones para saber a donde apuntar
 
-    BTST #6,D1;comprobamos j
-    BNE NOR1;j=1 saltamos a la etiqueta
-    OR.W ER0,(A2);hacemos un or
-    NOT ER0;negamos el resultado
-    BRA DECOD;volvemos a decod
+    BTST #6,D1 ;comprobamos j
+    BNE NOR1 ;j=1 saltamos a la etiqueta
+    OR.W ER0,(A2) ;hacemos un or
+    NOT ER0 ;negamos el resultado
+    BRA FETCH ;volvemos a decod
 NOR1:
-    OR.W ER0,(A2);hacemos un or
-    NOT ER0;negamos el resultado
-    BRA DECOD;volvemos a decod
+    OR.W ER0,(A2) ;hacemos un or
+    NOT ER0 ;negamos el resultado
+    BRA FETCH ;volvemos a decod
 
 
 ESET:
-    MOVE D1,D3;movemos la instruccion a un registro auxiliar para operar
-
-    LEA ER0,A2;movemos la direccion de ER0 a un registro ya que las direcciones de los ER estan contiguas
-    AND #%11,D3;obtenemos c
-    MOVE D3,A3;movemos la direccion resultante a un registro auxiliar
-    ADD A3,A2;sumamos la direcciones para saber a donde apuntar
-
+    MOVE D1,D3 ;movemos la instruccion a un registro auxiliar para operar
+    LEA ER0,A2 ;movemos la direccion de ER0 a un registro
+    AND #%11,D3 ;obtenemos c
+    MOVE D3,A3 ;movemos la direccion resultante a un registro auxiliar
+    ADD A3,A2 ;sumamos la direcciones para saber a donde apuntar
     LSR #2,D3
     MOVE.B D3,D4
-
-    MOVE D4,(A2);movemos c al registro r
-    EXT (A2);extendemos el signo
-
-    BRA DECOD;volvemos a decod
-
+    MOVE D4,(A2) ;movemos c al registro r
+    EXT (A2) ;extendemos el signo
+    BRA FETCH ;volvemos a decod
 
 EADQ:
+    MOVE D1,D3 ;movemos la instruccion a otro registro para operar
+    LEA ER0,A2 ;movemos la instruccion a un registro auxiliar para operar
+    AND #%11,D3 ;obtenemos b
+    MOVE D3,A3 ;movemos a un registro auxiliar
+    ADD A3,A2 ;sumamos las direcciones
+    LSR #2,D3 ;desplazamos 2 para que el byte sea c
+    MOVE.B D3,D4 ;movemos c a otro registro
+    ADD D4,(A2) ;sumamos c mas el contenido de A2
+    EXT (A2) ;extendemos signo
 
-    MOVE D1,D3;movemos la instruccion a un registro auxiliar para operar
-
-    LEA ER0,A2;movemos la instruccion a un registro auxiliar para operar
-    AND #%11,D3;obtenemos b
-    MOVE D3,A3;movemos a un registro auxiliar
-    ADD A3,A2;sumamos las direcciones
-
-    LSR #2,D3;desplazamos 2 para que el byte sea c
-    MOVE.B D3,D4;movemos c a otro registro
-
-    ADD D4,(A2)sumamos c mas el contenido de la direccion de a que es el Er pertinente
-    EXT (A2);extendemos signo
-
-    BRA DECOD;volvemos a decod
+    BRA FETCH ;volvemos a decod
 
 ETRA:
-    MOVE D1,D3;movemos la instruccion a un registro auxiliar para operar
+    MOVE D1,D3 ;movemos la instruccion a un registro auxiliar para operar
 
-    LEA ER0,A2;movemos la direccion de Er0 a un registro auxiliar
-    AND #%11,D3;obtenemos b
-    MOVE D3,A3;movemos a registro auxiliar
+    LEA ER0,A2 ;movemos la direccion de Er0 a un registro auxiliar
+    AND #%11,D3 ;obtenemos b
+    MOVE D3,A3 ;movemos a registro auxiliar
 
-    LEA ER0,A4;movemos la direccion de Er0 a un registro auxiliar
-    LSR #4,D3;desplazamos 4 posiciones para poner a en los 2 bits menos significativos
-    AND #%11,D3;obtenemos a
-    MOVE D3,A4;movemos a registro auxiliar
+    LEA ER0,A4 ;movemos la direccion de Er0 a un registro auxiliar
+    LSR #4,D3 ;desplazamos 4 posiciones
+    AND #%11,D3 ;obtenemos a
+    MOVE D3,A4 ;movemos a registro auxiliar
 
-    MOVE ((A4)),A3 movemos el contenido a a a b
+    MOVE (A4),A3 ;movemos el contenido a a a b
 
-    BRA DECOD;volvemos a decod
+    BRA FETCH ;volvemos a decod
 
 EJMZ:
-    LSR #4,D1;desplazamos 4 bits para que el byte menos significativo sea m
-    BTST #2,ESR;comprobamos el flag pertinente
-    BNE JMZ1;saltamos a la etiqueta pertinente
-    BRA DECOD;volvemos a decod
+    LSR #4,D1 ;desplazamos 4 bits para que el byte menos significativo sea m
+    BTST #2,ESR ;comprobamos el flag pertinente
+    BNE JMZ1 ;saltamos a la etiqueta pertinente
+    BRA FETCH ;volvemos a decod
 JMZ1:
-    MOVE.B  D1,EPC;movemos 
-    BRA DECOD;volvemos a decod
+    MOVE.B  D1,EPC ;movemos 
+    BRA FETCH ;volvemos a decod
 
 
 EJMN:
-    LSR #4,D1;desplazamos 4 bits para que el byte menos significativo sea m
-    BTST #1,ESR;comprobamos el flag pertinente
-    BNE JMN1;saltamos a la etiqueta pertinente
-    BRA DECOD;volvemos a decod
+    LSR #4,D1 ;desplazamos 4 bits para que el byte menos significativo sea m
+    BTST #1,ESR ;comprobamos el flag pertinente
+    BNE JMN1 ;saltamos a la etiqueta pertinente
+    BRA FETCH ;volvemos a decod
 JMN1:
     MOVE.B  D1,EPC
-    BRA DECOD;volvemos a decod
+    BRA FETCH ;volvemos a decod
 
 
 EJMI:
-    LSR #4,D1;desplazamos 4 bits para que el byte menos significativo sea m
-    BTST #0,ESR;comprobamos el flag pertinente
-    BNE JMI1;saltamos a la etiqueta pertinente
-    BRA DECOD;volvemos a decod
+    LSR #4,D1 ;desplazamos 4 bits para que el byte menos significativo sea m
+    BTST #0,ESR ;comprobamos el flag pertinente
+    BNE JMI1 ;saltamos a la etiqueta pertinente
+    BRA FETCH ;volvemos a decod
 JMI1:
     MOVE.B  D1,EPC
-    BRA DECOD;volvemos a decod
+    BRA FETCH ;volvemos a decod
 
 EHLT:
-    SIMHALT;fin
+    SIMHALT ;fin
     ;--- FEXEC: FIN EJECUCION
     
     
