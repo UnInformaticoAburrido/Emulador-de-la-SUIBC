@@ -22,11 +22,11 @@ FETCH:
         ;*** En esta seccion debeis introducir el codigo necesario para cargar
         ;*** en el EIR la siguiente instruccion a ejecutar, indicada por el EPC,
 	    ;*** y dejar listo el EPC para que apunte a la siguiente instruccion
-	    ADDQ.W #1, A4
     MOVE.W EPC,A0
-    MOVE.W EMEM(A0), D0
+    ADDA A0,A0
+    MOVE.W EMEM(A0),D0
     MOVE.W D0, EIR
-    ADDQ.W #2,EPC
+    ADDQ.W #1,EPC
 
 
     ;--- FFETCH: FIN FETCH
@@ -82,26 +82,29 @@ JMPLIST:
 	
 	; ESCRIBID EN CADA ETIQUETA LA FASE DE EJECUCION DE CADA INSTRUCCION
 ESTO:
-    MOVE.B D1,A2 ;movemos el Byte menos significativo a un registro auxiliar
+    MOVE.W D0,D2
+    AND #$FF,D2
+    MOVE.W D2,A2 ;movemos el Byte menos significativo a un registro auxiliar
     LEA EMEM,A3 ;guardamos la direccion de EMEM en un registro auxiliar
     ADD A2,A3 ;sumamos las direcciones para ver donde guardamos
     
-    BTST #11,D1 ;comprobamos la j
+    BTST #11,D0 ;comprobamos la j
     BNE STO1 ;si j es 1 saltamos a la etiqueta STO1
 
-    MOVE [ER0],A2 ;movemos el contenido ER0 a la direccion de memoria asignada
+    MOVE ER0,A2 ;movemos el contenido ER0 a la direccion de memoria asignada
     BRA FETCH ;volvemos al decode
 STO1:
-    MOVE [ER1],A2 ;movemos el contenido ER0 a la direccion de memoria asignada
+    MOVE ER1,A2 ;movemos el contenido ER0 a la direccion de memoria asignada
     BRA FETCH ;volvemos al decode
 
 
 ELOA:
-    MOVE.B D1,A2 ;movemos el Byte menos significativo a un registro auxiliar
+    MOVE.W D0,D2 ;movemos el Byte menos significativo a un registro auxiliar 
+    AND #$FF,D2
     LEA EMEM,A3 ;guardamos la direccion de EMEM en un registro auxiliar
-    ADDA A2,A2 
-    ADDA A2,A3 ;sumamos las direcciones para ver donde guardamos
-    BTST #11,D1 ;comprobamos la j
+    MULU.W #2,D2
+    ADDA D2,A3 ;sumamos las direcciones para ver donde guardamos
+    BTST #11,D0 ;comprobamos la j
     BNE LOA1 ;si j=1 saltamos a la etiqueta LOA1
     MOVE (A3),ER0 ;movemos el contenido de m a ER0
     MOVE.W SR,-(SP)
@@ -121,24 +124,26 @@ LOA1:
 
 
 ECMP:
-   MOVE D1,D3 ;movemos la instruccion a un registro auxiliar para operar
+   MOVE D0,D3 ;movemos la instruccion a un registro auxiliar para operar
 *movemos de ER0 a memoria aprovechando que las direcciones de ER son contiguas
-   LEA ER0,A2
+    LEA ER0,A2
    **110000
     AND #%110000,D3  ;mascara de bits para comprobar aa
     LSR.W #3,D3
     MOVE D3,A3 ;movemos la direccion resultante a otro registro
     ADDA A3,A2 ;las sumamos para apuntar al ER pertinente
-    BTST #6,D1 ;comprobamos la j
+    BTST #6,D0 ;comprobamos la j
     BNE CMP1 ;si j=1 saltamos a la etiqueta CMP1
-    CMP.W ER0,(A2) ;hacemos un cmp entre Er0 y el registro A2
+    MOVE.W ER0,D4
+    CMP (A2),D4 ;hacemos un cmp entre Er0 y el registro A2
     MOVE.W SR,-(SP)
     JSR FLAGSZN
     JSR AC
     ADDQ #2,SP
     BRA FETCH ;volvemos a decod
 CMP1:
-    CMP.W ER1,(A2) ;hacemos cmp entre ER1 y el registro A2
+    MOVE.W ER0,D4
+    CMP.W (A2),D4 ;hacemos cmp entre ER1 y el registro A2
     MOVE.W SR,-(SP)
     JSR FLAGSZN
     JSR AC
@@ -146,23 +151,23 @@ CMP1:
     BRA FETCH ;volvemos a decod
 
 EADD:
-    MOVE D1,D3 ;movemos la instruccion a un registro auxiliar para operar
+    MOVE D0,D3 ;movemos la instruccion a un registro auxiliar para operar
     LEA ER0,A2 ;movemos la direccion de ER0
-   **110000
     AND #%110000,D3 ;obtenemos aa
     LSR.W #3,D3
-    MOVE D3,A3 ;movemos la direccion resultante a un registro auxiliar
-    ADD A3,A2 ;sumamos la direcciones para saber a donde apuntar
-    BTST #6,D1 ;comprobamos j
+    ADDA D3,A2 ;sumamos la direcciones para saber a donde apuntar
+    BTST #6,D0 ;comprobamos j
     BNE ADD1 ;j=1 saltamos a la etiqueta
-    ADD.W ER0,(A2) ;sumamos el registro con el contenido de la direccion
+    MOVE.W (A2),D4
+    ADD D4,ER0 ;sumamos el registro con el contenido de la direccion
     MOVE.W SR,-(SP)
     JSR FLAGSZN
     JSR AC
     ADDQ #2,SP
     BRA FETCH ;volvemos a decod
 ADD1:
-    ADD.W ER1,(A2) ;sumamos el registro con el contenido de la direccion
+    MOVE.W (A2),D4
+    ADD.W D4,ER1 ;sumamos el registro con el contenido de la direccion
     MOVE.W SR,-(SP)
     JSR FLAGSZN
     JSR AC
@@ -170,33 +175,36 @@ ADD1:
     BRA FETCH ;volvemos a decod
 
 ESUB:
-    MOVE D1,D3 ;movemos la instruccion a un registro auxiliar para operar
-
+    MOVE D0,D3 ;movemos la instruccion a un registro auxiliar para operar
     LEA ER0,A2 ;movemos la direccion de ER0 a un registro
    **110000
     AND #%110000,D3 ;obtenemos aa
     LSR.W #3,D3
     MOVE D3,A3 ;movemos la direccion resultante a un registro auxiliar
     ADD A3,A2 ;sumamos la direcciones para saber a donde apuntar
-    BTST #6,D1 ;comprobamos j
+    BTST #6,D0 ;comprobamos j
     BNE SUB1 ;j=1 saltamos a la etiqueta
-    SUB.W ER0,(A2) ;sumamos el registro con el contenido de la direccion
+    MOVE.W ER0,D4
+    SUB D4,(A2) ;sumamos el registro con el contenido de la direccion
     MOVE.W SR,-(SP)
     JSR FLAGSZN
     JSR AC
     ADDQ #2,SP
+    MOVE.W D4,ER0
     BRA FETCH ;volvemos a decod
 SUB1:
-    SUB.W ER1,(A2) ;sumamos el registro con el contenido de la direccion
+    MOVE.W ER1,D4
+    SUB.W D4,(A2) ;sumamos el registro con el contenido de la direccion
     MOVE.W SR,-(SP)
     JSR FLAGSZN
     JSR AC
     ADDQ #2,SP
+    MOVE.W ER1,D4
     BRA FETCH ;volvemos a decod
 
 
 ENOR:
-    MOVE D1,D3 ;movemos la instruccion a un registro auxiliar para operar
+    MOVE D0,D3 ;movemos la instruccion a un registro auxiliar para operar
     LEA ER0,A2 ;movemos la direccion de ER0 a un registro
    **110000
     AND #%110000,D3 ;obtenemos aa
@@ -204,40 +212,45 @@ ENOR:
     MOVE D3,A3 ;movemos la direccion resultante a un registro auxiliar
     ADD A3,A2 ;sumamos la direcciones para saber a donde apuntar
 
-    BTST #6,D1 ;comprobamos j
+    BTST #6,D0 ;comprobamos j
     BNE NOR1 ;j=1 saltamos a la etiqueta
-    OR.W ER0,(A2) ;hacemos un or
-    NOT ER0 ;negamos el resultado
-    MOVE.W SR,-(SP)
-    JSR FLAGSZN
-    ADDQ #2,SP    
-    BRA FETCH ;volvemos a decod
-NOR1:
-    OR.W ER0,(A2) ;hacemos un or
-    NOT ER0 ;negamos el resultado
+    MOVE.W ER0,D4
+    OR.W D4,(A2) ;hacemos un or
+    NOT D4 ;negamos el resultado
     MOVE.W SR,-(SP)
     JSR FLAGSZN
     ADDQ #2,SP
+    MOVE.W D4,ER0
+    BRA FETCH ;volvemos a decod
+NOR1:
+    MOVE.W D4,ER1
+    OR.W D4,(A2) ;hacemos un or
+    NOT D4 ;negamos el resultado
+    MOVE.W SR,-(SP)
+    JSR FLAGSZN
+    ADDQ #2,SP
+    MOVE.W ER1,D4
     BRA FETCH ;volvemos a decod
 
 
 ESET:
-    MOVE D1,D3 ;movemos la instruccion a un registro auxiliar para operar
+    MOVE D0,D3 ;movemos la instruccion a un registro auxiliar para operar
     LEA ER0,A2 ;movemos la direccion de ER0 a un registro
     AND #%11,D3 ;obtenemos c
     MOVE D3,A3 ;movemos la direccion resultante a un registro auxiliar
     ADD A3,A2 ;sumamos la direcciones para saber a donde apuntar
     LSR #2,D3
     MOVE.B D3,D4
-    MOVE D4,(A2) ;movemos c al registro r
-    EXT (A2) ;extendemos el signo
+    MOVE D5,(A2) ;movemos c al registro r
+    EXT.W D4 ;extendemos el signo
     MOVE.W SR,-(SP)
     JSR FLAGSZN
     ADDQ #2,SP
+    MOVE.W D5,ER0
     BRA FETCH ;volvemos a decod
 
 EADQ:
-    MOVE D1,D3 ;movemos la instruccion a otro registro para operar
+    MOVE D0,D3 ;movemos la instruccion a otro registro para operar
     LEA ER0,A2 ;movemos la instruccion a un registro auxiliar para operar
     AND #%11,D3 ;obtenemos b
     MOVE D3,A3 ;movemos a un registro auxiliar
@@ -245,7 +258,8 @@ EADQ:
     LSR #2,D3 ;desplazamos 2 para que el byte sea c
     MOVE.B D3,D4 ;movemos c a otro registro
     ADD D4,(A2) ;sumamos c mas el contenido de A2
-    EXT (A2) ;extendemos signo
+    MOVE.W A2,D5
+    EXT D5 ;extendemos signo
     MOVE.W SR,-(SP)
     JSR FLAGSZN
     JSR AC
@@ -253,46 +267,55 @@ EADQ:
     BRA FETCH ;volvemos a decod
 
 ETRA:
-    MOVE D1,D3 ;movemos la instruccion a un registro auxiliar para operar
-    LEA ER0,A2 ;movemos la direccion de Er0 a un registro auxiliar
+    MOVE D0,D3 ;movemos la instruccion a un registro auxiliar para operar
     AND #%11,D3 ;obtenemos b
-    MOVE D3,A3 ;movemos a registro auxiliar
-    LEA ER0,A4 ;movemos la direccion de Er0 a un registro auxiliar
-    LSR #4,D3 ;desplazamos 4 posiciones
-    AND #%11,D3 ;obtenemos a
-    MOVE D3,A4 ;movemos a registro auxiliar
-    MOVE (A4),A3 ;movemos el contenido a a a b
+    MULU.W #2,D3
+
+    LEA ER0,A2 ;movemos la direccion de Er0 a un registro auxiliar
+    ADDA D3,A2
+    
+    MOVE D0,D3
+    LSR #3,D3 ;desplazamos 3 posiciones
+    AND #%110,D3 ;obtenemos a
+    
+    LEA ER0,A3 ;movemos la direccion de Er0 a un registro auxiliar
+    ADDA D3,A3
+
+    MOVE (A3),(A2) ;movemos el contenido de Era a Erb
+    
     MOVE.W SR,-(SP)
     JSR FLAGSZN
     ADDQ #2,SP
+
     BRA FETCH ;volvemos a decod
 
 EJMZ:
-    LSR #4,D1 ;desplazamos 4 bits para que el byte menos significativo sea m
-    BTST #2,ESR ;comprobamos el flag pertinente
+    LSR #4,D0 ;desplazamos 4 bits para que el byte menos significativo sea m
+    MOVE.W ESR,D2
+    BTST #2,D2 ;comprobamos el flag pertinente
     BNE JMZ1 ;saltamos a la etiqueta pertinente
-        BRA FETCH ;volvemos a decod
+    BRA FETCH ;volvemos a decod
 JMZ1:
-    MOVE.B  D1,EPC ;movemos 
+    AND.W #$FF,D0
+    MOVE.W  D0,EPC ;movemos 
     BRA FETCH ;volvemos a decod
 
 
 EJMN:
-    LSR #4,D1 ;desplazamos 4 bits para que el byte menos significativo sea m
-    BTST #1,ESR ;comprobamos el flag pertinente
+    LSR #4,D0 ;desplazamos 4 bits para que el byte menos significativo sea m
+    MOVE.W ESR,D2
+    BTST #1,D2 ;comprobamos el flag pertinente
     BNE JMN1 ;saltamos a la etiqueta pertinente
     BRA FETCH ;volvemos a decod
 JMN1:
-    MOVE.B  D1,EPC
+    AND.W #$FF,D0
+    MOVE.W  D0,EPC
     BRA FETCH ;volvemos a decod
 
 EJMI:
-    LSR #4,D1 ;desplazamos 4 bits para que el byte menos significativo sea m
-    BTST #0,ESR ;comprobamos el flag pertinente
-    BNE JMI1 ;saltamos a la etiqueta pertinente
-    BRA FETCH ;volvemos a decod
-JMI1:
-    MOVE.B  D1,EPC
+    LSR #4,D0 ;desplazamos 4 bits para que el byte menos significativo sea m
+    AND.W #$FF,D0
+    MOVE.W  D0,EPC
     BRA FETCH ;volvemos a decod
 
 EHLT:
@@ -350,7 +373,7 @@ CNES1:
         ;*** especificada en el enunciado
 DECOD:
     MOVE.L D0,-(SP)       ; Cargar el valor de D0 en stack
-    MOVE.W 12(SP),D0
+    MOVE.W 8(SP),D0
     BTST #15,D0           ; Comprobar si el bit 15 de D0 es 1
     BNE GM                ; Saltar a GM si Z=1 (bit 15 es 0)
     
@@ -444,3 +467,8 @@ FINDEC:
 
     ;--- FDECOD: FIN DECOD
     END    START
+
+*~Font name~Courier New~
+*~Font size~10~
+*~Tab type~1~
+*~Tab size~4~
