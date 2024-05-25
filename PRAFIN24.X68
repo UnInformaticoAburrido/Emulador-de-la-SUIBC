@@ -265,8 +265,41 @@ EHLT:
         ;*** Aqui debeis incluir las subrutinas que necesite vuestra solucion
         ;*** SALVO DECOD, que va en la siguiente seccion
 
-	        ; ESCRIBID VUESTRO CODIGO AQUI
-        
+FLAGSZN: *Esta subrutina para actualizar solo los flags z y n
+    MOVE.L D0,-(SP)
+    MOVE.W 2(SP),D0
+    BTST #15,D0
+    BNE ZES1
+    BRA ZNES1
+ZES1:
+    MOVE.W ESR,D1
+    BSET #2,D1
+    MOVE.W D1,ESR
+ZNES1:
+    BTST #1,D0
+    BNE NES1
+    BRA NNES1
+NES1:
+    MOVE.W ESR,D1
+    BSET #1,D1
+    MOVE.W D1,ESR
+NNES1:
+    MOVE.L D0,(SP)+
+    RTS
+
+AC:
+    MOVE.L D0,-(SP)
+    MOVE.W 2(SP),D0
+    BTST #0,D0
+    BNE CES1
+    BRA CNES1
+CES1:
+    MOVE.W ESR,D1
+    BSET #0,D1
+    MOVE.W D1,ESR
+CNES1:
+    MOVE.L D0,(SP)+
+    RTS
     ;--- FSUBR: FIN SUBRUTINAS
     
     
