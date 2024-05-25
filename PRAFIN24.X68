@@ -289,7 +289,7 @@ NNES1:
 
 AC:
     MOVE.L D0,-(SP)
-    MOVE.W 2(SP),D0
+    MOVE.W 4(SP),D0
     BTST #0,D0
     BNE CES1
     BRA CNES1
