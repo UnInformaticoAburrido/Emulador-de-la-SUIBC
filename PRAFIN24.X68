@@ -5,7 +5,8 @@
 * Description: Emulador de la SUIBC
 *-----------------------------------------------------------
     ORG $1000
-EMEM:   DC.W $A807,$7012,$2050,$4860,$C000,$4460,$C000,$0001
+EMEM:   DC.W $A00C,$00A0,$7002,$5000,$A80D,$00A0,$4420,$63FD
+        DC.W $00A0,$2060,$800E,$C000,$0003,$0004,$0000
 EIR:    DC.W 0 ;eregistro de instruccion
 EPC:    DC.W 0 ;econtador de programa
 ER0:    DC.W 0 ;eregistro R0
@@ -28,7 +29,6 @@ FETCH:
     MOVE.W D0, EIR
     ADDQ.W #1,EPC
 
-
     ;--- FFETCH: FIN FETCH
     
     
@@ -39,19 +39,16 @@ FETCH:
         ;*** DECOD, llamar a la subrutina, y vaciar la pila correctamente,
         ;*** almacenando el resultado de la decodificacion en D1
 
-            ;Preparamos stack
-            SUBQ.W #2, SP
-            MOVE.W EIR, -(SP)
-    	    ;Llamamos a decod de libreria
-            JSR    DECOD
-            ADDQ.W #2, SP
-            MOVE.W (SP)+, D1
-            ;Recogemos resultados del stack
+            SUBQ.W #2, SP ;Reservamos emoria en la pila
+            MOVE.W EIR, -(SP) ;Almacenamos el EIR en la pila
 
+            JSR    DECOD ;Entramos en la subrutina de decode
+            ADDQ.W #2, SP ;Eliminamos el EIR de la pila
+            MOVE.W (SP)+, D1 ;Alamcenamos la respuesta de decode en D1
         
     ;--- FBRDECOD: FIN SALTO A DECOD
     
-    
+
     
     ;--- IBREXEC: INICIO SALTO A FASE DE EJECUCION
         ;*** Esta seccion se usa para saltar a la fase de ejecucion
@@ -82,188 +79,239 @@ JMPLIST:
 	
 	; ESCRIBID EN CADA ETIQUETA LA FASE DE EJECUCION DE CADA INSTRUCCION
 ESTO:
-    MOVE.W D0,D2
-    AND #$FF,D2
-    MOVE.W D2,A2 ;movemos el Byte menos significativo a un registro auxiliar
-    LEA EMEM,A3 ;guardamos la direccion de EMEM en un registro auxiliar
-    ADD A2,A3 ;sumamos las direcciones para ver donde guardamos
+    MOVE.W D0,D2 ;Movemos la instruccion en el registro D2
+    AND #$FF,D2 ;Aplicamos una mascara a la instruccion
+    MOVE.W D2,A2 ;Almaceenamos la direccion en A2
+    LEA EMEM,A3 ;Guardamos la direccion efectiva de EMEM en A3
+
+    *Realizamos operaciones para saber a que registro apuntar.
+    MULU.W #2,D2
+    ADD A2,A3
     
-    BTST #11,D0 ;comprobamos la j
-    BNE STO1 ;si j es 1 saltamos a la etiqueta STO1
+    BTST #11,D0 ;Comprobamos el valor del parametro J
+    BNE STO1 ;Si j es 1 saltamos a la etiqueta STO1
 
-    MOVE ER0,A2 ;movemos el contenido ER0 a la direccion de memoria asignada
+    MOVE ER0,A2 ;Movemos el contenido ER0 a la direccion de memoria asignada
     BRA FETCH ;volvemos al decode
+
 STO1:
-    MOVE ER1,A2 ;movemos el contenido ER0 a la direccion de memoria asignada
-    BRA FETCH ;volvemos al decode
-
+    MOVE ER1,A2 ;Movemos el contenido ER0 a la direccion de memoria asignada
+    BRA FETCH
 
 ELOA:
-    MOVE.W D0,D2 ;movemos el Byte menos significativo a un registro auxiliar 
-    AND #$FF,D2
-    LEA EMEM,A3 ;guardamos la direccion de EMEM en un registro auxiliar
-    MULU.W #2,D2
-    ADDA D2,A3 ;sumamos las direcciones para ver donde guardamos
-    BTST #11,D0 ;comprobamos la j
-    BNE LOA1 ;si j=1 saltamos a la etiqueta LOA1
-    MOVE (A3),ER0 ;movemos el contenido de m a ER0
-    MOVE.W SR,-(SP)
-    JSR FLAGSZN
-    ADDQ #2,SP
-    BRA FETCH ;volvemos a decode
-LOA1:
-    MOVE (A3),ER1 ;movemos el contenido de m a ER1
-    MOVE.W SR,-(SP)
-    JSR FLAGSZN
-    ADDQ #2,SP
-    MOVE.W SR,-(SP)
-    JSR FLAGSZN
-    JSR AC
-    ADDQ #2,SP
-    BRA FETCH ;volvemos a decode
+    MOVE.W D0,D2 ;Movemos la instruccion en el registro D2
+    AND #$FF,D2 ;Aplicamos una mascara a la instruccion
+    LEA EMEM,A3 ;Guardamos la direccion de EMEM en un registro auxiliar
 
+    *Realizamos operaciones para saber a que registro apuntar.
+    MULU.W #2,D2
+    ADDA D2,A3 ;Sumamos las direcciones para ver donde guardamos
+
+    BTST #11,D0 ;Comprovamos el valor del parametro J
+    BNE LOA1
+    MOVE (A3),ER0 ;Movemos el contenido de m a ER0
+
+    *Ejecutamos el subrutina para actualizar los flags
+    MOVE.W SR,-(SP)
+    JSR FLAGSZN
+    ADDQ #2,SP
+    BRA FETCH
+
+LOA1:
+    MOVE (A3),ER1 ;Movemos el contenido de m a ER1
+
+    *Ejecutamos el subrutina para actualizar los flags
+    MOVE.W SR,-(SP)
+    JSR FLAGSZN
+    ADDQ #2,SP
+
+    BRA FETCH
 
 ECMP:
-   MOVE D0,D3 ;movemos la instruccion a un registro auxiliar para operar
-*movemos de ER0 a memoria aprovechando que las direcciones de ER son contiguas
-    LEA ER0,A2
-   **110000
-    AND #%110000,D3  ;mascara de bits para comprobar aa
+   
+    MOVE D0,D3 ;Movemos la instruccion a D3
+    LEA ER0,A2 ;Almacenamos la direccion efectiva de ER0 en A2
+
+    *Realizamos los calculos para apuntar a la posicion de memoria corecta.
+    AND #%110000,D3
     LSR.W #3,D3
-    MOVE D3,A3 ;movemos la direccion resultante a otro registro
-    ADDA A3,A2 ;las sumamos para apuntar al ER pertinente
-    BTST #6,D0 ;comprobamos la j
-    BNE CMP1 ;si j=1 saltamos a la etiqueta CMP1
+    MOVE D3,A2
+
+    BTST #6,D0 ;Comprovamos el valor del parametro J
+    BNE CMP1 
+    
     MOVE.W ER0,D4
-    CMP (A2),D4 ;hacemos un cmp entre Er0 y el registro A2
+    CMP (A2),D4 ;Realizamos un cmp en la maquina local
+    
+    *Ejecutamos la actualizacion de los flags
     MOVE.W SR,-(SP)
     JSR FLAGSZN
     JSR AC
     ADDQ #2,SP
-    BRA FETCH ;volvemos a decod
+
+    BRA FETCH
 CMP1:
     MOVE.W ER0,D4
     CMP.W (A2),D4 ;hacemos cmp entre ER1 y el registro A2
+    
+    *Ejecutamos la actualizacion de los flags
     MOVE.W SR,-(SP)
     JSR FLAGSZN
     JSR AC
     ADDQ #2,SP
-    BRA FETCH ;volvemos a decod
+
+    BRA FETCH
 
 EADD:
-    MOVE D0,D3 ;movemos la instruccion a un registro auxiliar para operar
-    LEA ER0,A2 ;movemos la direccion de ER0
-    AND #%110000,D3 ;obtenemos aa
+    MOVE D0,D3 ;Movemos la instruccion a D3
+    LEA ER0,A2 ;Mvemos la direccion efectiva de ER0
+    AND #%110000,D3 ;aplicamos una mascara  para obtener aa
+
+    *Realizamos operaciones para saber la posicion de memoria a la que apuntar
     LSR.W #3,D3
-    ADDA D3,A2 ;sumamos la direcciones para saber a donde apuntar
-    BTST #6,D0 ;comprobamos j
-    BNE ADD1 ;j=1 saltamos a la etiqueta
-    MOVE.W (A2),D4
-    ADD D4,ER0 ;sumamos el registro con el contenido de la direccion
+    ADDA D3,A2
+
+    BTST #6,D0  ;Comprovamos el valor del parametro J
+    BNE ADD1
+    
+    MOVE.W (A2),D4 ;Realizamos la operacion de suma
+    ADD D4,ER0
+    
+    *Actualizamos los flags
     MOVE.W SR,-(SP)
     JSR FLAGSZN
     JSR AC
     ADDQ #2,SP
-    BRA FETCH ;volvemos a decod
+
+    BRA FETCH
 ADD1:
-    MOVE.W (A2),D4
-    ADD.W D4,ER1 ;sumamos el registro con el contenido de la direccion
+    MOVE.W (A2),D4 ;Realizamos la operacion de suma
+    ADD.W D4,ER1
+
+    *Actualizamos los flags
     MOVE.W SR,-(SP)
     JSR FLAGSZN
     JSR AC
     ADDQ #2,SP
-    BRA FETCH ;volvemos a decod
+
+    BRA FETCH
 
 ESUB:
-    MOVE D0,D3 ;movemos la instruccion a un registro auxiliar para operar
-    LEA ER0,A2 ;movemos la direccion de ER0 a un registro
-   **110000
-    AND #%110000,D3 ;obtenemos aa
+    MOVE D0,D3 ;Almaceenamos en D3 la instruccion a realizar.
+    LEA ER0,A2 ;Movemos la direccion efectiva de ER0
+    
+    AND #%110000,D3 ;Aplicamos una mascara para obtenemos aa
     LSR.W #3,D3
-    MOVE D3,A3 ;movemos la direccion resultante a un registro auxiliar
-    ADD A3,A2 ;sumamos la direcciones para saber a donde apuntar
-    BTST #6,D0 ;comprobamos j
-    BNE SUB1 ;j=1 saltamos a la etiqueta
-    MOVE.W ER0,D4
-    SUB D4,(A2) ;sumamos el registro con el contenido de la direccion
+    ADDA D3,A2 ;Sumamos la direcciones para saber a donde apuntar
+    
+    BTST #6,D0 ;Comprovamos el valor de J
+    BNE ADD1
+
+    MOVE.W (A2),D4 ;Realizamos la operacion de resta
+    SUB.W D4,ER0 
+
+    *Actualizamos los flags
     MOVE.W SR,-(SP)
     JSR FLAGSZN
     JSR AC
     ADDQ #2,SP
-    MOVE.W D4,ER0
-    BRA FETCH ;volvemos a decod
+
+    BRA FETCH
 SUB1:
-    MOVE.W ER1,D4
-    SUB.W D4,(A2) ;sumamos el registro con el contenido de la direccion
+    MOVE.W (A2),D4;Realizamos la operacion de resta
+    SUB.W D4,ER1
+
+    *Actualizamos los flags
     MOVE.W SR,-(SP)
     JSR FLAGSZN
     JSR AC
     ADDQ #2,SP
-    MOVE.W ER1,D4
-    BRA FETCH ;volvemos a decod
+
+    BRA FETCH
 
 
 ENOR:
-    MOVE D0,D3 ;movemos la instruccion a un registro auxiliar para operar
-    LEA ER0,A2 ;movemos la direccion de ER0 a un registro
-   **110000
-    AND #%110000,D3 ;obtenemos aa
+    MOVE D0,D3 ;Movemos la instruccion al registro D3
+    LEA ER0,A2 ;movemos la direccion efectiva de ER0 a A2
+    AND #%110000,D3 ;Aplicamos una mascara para leer aa
     LSR.W #3,D3
+
     MOVE D3,A3 ;movemos la direccion resultante a un registro auxiliar
     ADD A3,A2 ;sumamos la direcciones para saber a donde apuntar
 
-    BTST #6,D0 ;comprobamos j
-    BNE NOR1 ;j=1 saltamos a la etiqueta
-    MOVE.W ER0,D4
-    OR.W D4,(A2) ;hacemos un or
+    BTST #6,D0 ;Comprovamos el valor de J
+    BNE NOR1
+
+    MOVE.W ER0,D4 ;Realizamos la operacion encadednado un OR y un NOT
+    OR.W D4,(A2)
     NOT D4 ;negamos el resultado
+
+    *Actualizamos los flags
     MOVE.W SR,-(SP)
     JSR FLAGSZN
     ADDQ #2,SP
-    MOVE.W D4,ER0
-    BRA FETCH ;volvemos a decod
+
+    MOVE.W ER0,D4 ;Almaceenamos el resultado en ER0
+
+    BRA FETCH
 NOR1:
-    MOVE.W D4,ER1
-    OR.W D4,(A2) ;hacemos un or
-    NOT D4 ;negamos el resultado
+    MOVE.W D4,ER1 ;Realizamos la operacion encadednado un OR y un NOT
+    OR.W D4,(A2)
+    NOT D4
+
+    *Actualizamos los flags
     MOVE.W SR,-(SP)
     JSR FLAGSZN
     ADDQ #2,SP
-    MOVE.W ER1,D4
-    BRA FETCH ;volvemos a decod
+
+    MOVE.W ER1,D4 ;Almaceenamos el resultado en ER1
+
+    BRA FETCH
 
 
 ESET:
-    MOVE D0,D3 ;movemos la instruccion a un registro auxiliar para operar
-    LEA ER0,A2 ;movemos la direccion de ER0 a un registro
-    AND #%11,D3 ;obtenemos c
-    MOVE D3,A3 ;movemos la direccion resultante a un registro auxiliar
-    ADD A3,A2 ;sumamos la direcciones para saber a donde apuntar
+    MOVE D0,D3 ;Movemos la instruccion al registro D3
+    LEA ER0,A2
+    AND #%11,D3 ;Aplicamos una mascara para obtener c
+
+    *Realizamos operaciones para saber que posicion de memoria apuntar
+    ADD D3,A2
     LSR #2,D3
-    MOVE.B D3,D4
+    AND.W #$FF,D3
+    MOVE.W D3,D4
+
     MOVE D5,(A2) ;movemos c al registro r
     EXT.W D4 ;extendemos el signo
+    
+    *Actualizamos los flags
     MOVE.W SR,-(SP)
     JSR FLAGSZN
     ADDQ #2,SP
+
     MOVE.W D5,ER0
     BRA FETCH ;volvemos a decod
 
 EADQ:
-    MOVE D0,D3 ;movemos la instruccion a otro registro para operar
-    LEA ER0,A2 ;movemos la instruccion a un registro auxiliar para operar
-    AND #%11,D3 ;obtenemos b
-    MOVE D3,A3 ;movemos a un registro auxiliar
-    ADD A3,A2 ;sumamos las direcciones
-    LSR #2,D3 ;desplazamos 2 para que el byte sea c
-    MOVE.B D3,D4 ;movemos c a otro registro
-    ADD D4,(A2) ;sumamos c mas el contenido de A2
+    MOVE D0,D3 ;Movemos la instruccion al registro D3
+    LEA ER0,A2
+
+    *Realizamos operaciones para obtener C
+    AND #%11,D3
+    MOVE D3,A3
+    ADD A3,A2
+    LSR #2,D3
+    MOVE.B D3,D4 ;Almacenamos C en D4
+
+    ADD D4,(A2) ;Realizamos la operacion de suma
     MOVE.W A2,D5
-    EXT D5 ;extendemos signo
+    EXT D5 ;Extendemos signo
+    
+    *Actrulizamos los flags
     MOVE.W SR,-(SP)
     JSR FLAGSZN
     JSR AC
     ADDQ #2,SP
+
     BRA FETCH ;volvemos a decod
 
 ETRA:
@@ -283,40 +331,45 @@ ETRA:
 
     MOVE (A3),(A2) ;movemos el contenido de Era a Erb
     
+    *Actualizamos los flags
     MOVE.W SR,-(SP)
     JSR FLAGSZN
     ADDQ #2,SP
 
-    BRA FETCH ;volvemos a decod
+    BRA FETCH
 
 EJMZ:
-    LSR #4,D0 ;desplazamos 4 bits para que el byte menos significativo sea m
+    LSR #4,D0 ;Desplazamos 4 bits para que el byte menos significativo sea m
     MOVE.W ESR,D2
-    BTST #2,D2 ;comprobamos el flag pertinente
-    BNE JMZ1 ;saltamos a la etiqueta pertinente
-    BRA FETCH ;volvemos a decod
+    BTST #2,D2 ;comprobamos el flag Z
+    BNE JMZ1
+
+    BRA FETCH
 JMZ1:
-    AND.W #$FF,D0
-    MOVE.W  D0,EPC ;movemos 
-    BRA FETCH ;volvemos a decod
+    AND.W #$FF,D0 ;Realizamos la operacion de cambio de PC
+    MOVE.W  D0,EPC
+    
+    BRA FETCH
 
 
 EJMN:
-    LSR #4,D0 ;desplazamos 4 bits para que el byte menos significativo sea m
+    LSR #4,D0 ;Desplazamos 4 bits para que el byte menos significativo sea m
     MOVE.W ESR,D2
-    BTST #1,D2 ;comprobamos el flag pertinente
-    BNE JMN1 ;saltamos a la etiqueta pertinente
-    BRA FETCH ;volvemos a decod
+    BTST #1,D2 ;comprobamos el flag N
+    BNE JMN1
+
+    BRA FETCH
 JMN1:
-    AND.W #$FF,D0
+    AND.W #$FF,D0 ;Realizamos la operacion de cambio de PC
     MOVE.W  D0,EPC
-    BRA FETCH ;volvemos a decod
+    BRA FETCH
 
 EJMI:
     LSR #4,D0 ;desplazamos 4 bits para que el byte menos significativo sea m
-    AND.W #$FF,D0
-    MOVE.W  D0,EPC
-    BRA FETCH ;volvemos a decod
+    
+    AND.W #$FF,D0 ;Realizamos la operacion de cambio de PC
+    MOVE.W  EPC,D0
+    BRA FETCH
 
 EHLT:
     SIMHALT ;fin
@@ -329,39 +382,45 @@ EHLT:
         ;*** SALVO DECOD, que va en la siguiente seccion
 
 FLAGSZN: *Esta subrutina para actualizar solo los flags z y n
-    MOVE.L D0,-(SP)
-    MOVE.W 2(SP),D0
-    BTST #15,D0
+
+    MOVE.L D0,-(SP) ;Almacenamos los datos de D0 en la pila
+    MOVE.W 2(SP),D0 ;Obtenemos el SR y lo almaceenamos en D0
+    
+    BTST #2,D0 ;Comprobamos el bit Z
     BNE ZES1
     BRA ZNES1
 ZES1:
-    MOVE.W ESR,D1
+    MOVE.W ESR,D0 ;Seteamos el valor Z a 1
     BSET #2,D1
-    MOVE.W D1,ESR
+
 ZNES1:
     BTST #1,D0
     BNE NES1
-    BRA NNES1
+
 NES1:
     MOVE.W ESR,D1
-    BSET #1,D1
-    MOVE.W D1,ESR
+    BSET #1,D1  ;Seteamos el valor N a 1
+
 NNES1:
-    MOVE.L D0,(SP)+
+    MOVE.W D1,ESR ;Almaceenamos el nuevo valor de ESR
+    MOVE.L D0,(SP)+  ;Volvemos a cargar los datos de SP en D0
     RTS
 
-AC:
-    MOVE.L D0,-(SP)
-    MOVE.W 4(SP),D0
+AC: *Esta subrutina se encargara de almacenar C
+    MOVE.L D0,-(SP) ;Almacenamos los datos de D0 en la pila
+    MOVE.W 4(SP),D0 ;Obtenemos el SR y lo almaceenamos en D0
+
     BTST #0,D0
     BNE CES1
     BRA CNES1
+
 CES1:
     MOVE.W ESR,D1
     BSET #0,D1
     MOVE.W D1,ESR
+
 CNES1:
-    MOVE.L D0,(SP)+
+    MOVE.L D0,(SP)+ ;Volvemos a cargar los datos de SP en D0
     RTS
     ;--- FSUBR: FIN SUBRUTINAS
     
@@ -386,89 +445,92 @@ DECOD:
 GM:
     BTST #14,D0            ; Comprobar si el bit 5 de D0 es 1
     BNE HTL
+    
     BTST #13,D0            ; Comprobar si el bit 4 de D0 es 1
     BNE LOA
-    ; Devolver STO como predeterminado
-    MOVE.W #0,10(SP)
+    
+    * Devolver STO como predeterminado
+    MOVE.W #0,10(SP) ;Devolvemos el indice 0
     BRA FINDEC
 
 ALU:
     BTST #13,D0           ; Comprobar si el bit 13 de D0 es 1
     BNE ADQTRA
+    
     BTST #12,D0           ; Comprobar si el bit 12 de D0 es 1
     BNE SET
+    
     BTST #11,D0           ; Comprobar si el bit 11 de D0 es 1
     BNE SUBNOR
+    
     BTST #10,D0           ; Comprobar si el bit 10 de D0 es 1
     BNE ADD
+    
     *Devolver la orden CMP
-    MOVE.W #2,10(SP)
+    MOVE.W #2,10(SP) ;Devolvemos el indice 2
     BRA FINDEC
 
 JUMP:
     BTST #13,D0            ; Comprobar si el bit 7 de D0 es 1
     BNE JMI
+    
     BTST #12,D0            ; Comprobar si el bit 6 de D0 es 1
     BNE JMN
-    *Devolver el JMZ
-    MOVE.W #9,10(SP)
+    
+    MOVE.W #9,10(SP) ;Devolvemos el indice 9
     BRA FINDEC
 
 ADD:
-    MOVE.W #3,10(SP)
+    MOVE.W #3,10(SP) ;Devolvemos el indice 3
     BRA FINDEC
 
 SUBNOR:
     BTST #9,D0            ; Comprobar si el bit 9 de D0 es 1
     BNE NOR
+    
     *Devolver la orden SUB
-    MOVE.W #4,10(SP)
+    MOVE.W #4,10(SP) ;Devolvemos el indice 4
     BRA FINDEC
 
 NOR:
-    MOVE.W #5,10(SP)
+    MOVE.W #5,10(SP) ;Devolvemos el indice 5
     BRA FINDEC
 
 SET:
-    MOVE.W #6,10(SP)
+    MOVE.W #6,10(SP) ;Devolvemos el indice 6
     BRA FINDEC
 
 ADQTRA:
-    BTST #12,D0            ; Comprobar si el bit 8 de D0 es 1
+    BTST #12,D0            ;Comprobar si el bit 12 de D0 es 1
     BNE TRA
-    ; Devolver ADQ
-    MOVE.W #7,10(SP)
+    
+    *Devolver ADQ
+    MOVE.W #7,10(SP) ;Devolvemos el indice 7
     BRA FINDEC
 
 TRA:
-    MOVE.W #8,10(SP)
+    MOVE.W #8,10(SP) ;Devolvemos el indice 8
     BRA FINDEC
 
 
 JMI:
-    MOVE.W #11,10(SP)
+    MOVE.W #11,10(SP) ;Devolvemos el indice 11
     BRA FINDEC
 
 JMN:
-    MOVE.W #10,10(SP)
+    MOVE.W #10,10(SP) ;Devolvemos el indice 10
     BRA FINDEC
 
 LOA:
-    MOVE.W #1,10(SP)
+    MOVE.W #1,10(SP) ;Devolvemos el indice 1
     BRA FINDEC
 
 HTL:
-    MOVE.W #12, 10(SP)
+    MOVE.W #12, 10(SP) ;Devolvemos el indice 12
     BRA FINDEC
 
 FINDEC:
     MOVE.L (SP)+,D0        ; Restaurar D0
     RTS                   ; Retornar
-
     ;--- FDECOD: FIN DECOD
-    END    START
-
-*~Font name~Courier New~
-*~Font size~10~
-*~Tab type~1~
-*~Tab size~4~
+    END    STAR
