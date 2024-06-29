@@ -1,6 +1,6 @@
 *-----------------------------------------------------------
 * Title      : PRAFIN24
-* Written by : Dimitry Comapny Cifre,Asier Zubillaga Llabres
+* Written by : Dimitry Comapny Cifre
 * Date       : 26/05/2024
 * Description: Emulador de la SUIBC
 *-----------------------------------------------------------
